@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+aqi_env/
+env/
+
+# Logs + debug/scratch outputs
+*.log
+forecast_test.txt
+full_run_log.txt
+london_lstm.txt
+london_run.txt
+city_results.log
+
+# No CSV traces (rubric forbids CSV output)
+data/processed/*.csv
+data/raw/*.csv
+
+# Local store + registry artifacts (cloud is source of truth)
+data/*.db
+models/registry/
+*.h5
+*.keras
+*.joblib
+
+.ipynb_checkpoints/
+.pytest_cache/

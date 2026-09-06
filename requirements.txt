@@ -1,0 +1,49 @@
+# ============================================================================
+# London AQI Predictor — PINNED working versions (Python 3.10, Windows 11).
+# Use Python 3.10 ONLY. 3.11/3.12/3.14 break TensorFlow + hopsworks wheels.
+#
+# KEY COMPATIBILITY NOTE:
+#   tensorflow==2.18.0  needs  protobuf<6.0.0,>=3.20.3  AND  numpy<2.1.0
+#   hopsworks==5.0.6    needs  protobuf<5.0.0,>=4.25.4
+#   → protobuf>=4.25.4,<5.0.0 satisfies BOTH. We pin 4.25.4 explicitly.
+#   → numpy must be <2.1.0 (we use 2.0.2, last release before 2.1).
+#
+# Install:
+#   py -3.10 -m venv venv
+#   venv\Scripts\activate
+#   pip install --upgrade pip
+#   pip install --timeout 300 --retries 20 -r requirements.txt
+# ============================================================================
+
+# ── Compatibility pins (must be listed BEFORE the packages that need them) ──
+protobuf==4.25.4
+numpy==2.0.2
+
+# ── Core data / ML ──────────────────────────────────────────────────────────
+pandas==2.2.3
+scikit-learn==1.5.2
+joblib==1.4.2
+python-dotenv==1.0.1
+requests==2.31.0
+
+# ── Cloud feature store + model registry ────────────────────────────────────
+hopsworks==5.0.6
+confluent-kafka==2.15.0   # required by hopsworks fg.insert (Kafka write path)
+# sqlalchemy 2.0 required: pandas>=2.3 read_sql fails with sqlalchemy 1.4
+sqlalchemy==2.0.36
+PyMySQL==1.1.1
+
+# ── Deep learning (LSTM) — CPU wheel, ~350 MB download ──────────────────────
+# 2.18.0 is the newest TF that accepts protobuf<5.0.0 (needed by hopsworks).
+tensorflow==2.18.0
+
+# ── Explainability ───────────────────────────────────────────────────────────
+shap==0.46.0
+
+# ── Web / Dashboard ─────────────────────────────────────────────────────────
+streamlit==1.40.2
+plotly==5.24.1
+flask==3.1.0
+
+# ── Tests ────────────────────────────────────────────────────────────────────
+pytest==7.4.4

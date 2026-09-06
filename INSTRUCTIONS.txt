@@ -1,0 +1,174 @@
+================================================================================
+ AQI PREDICTOR — SETUP INSTRUCTIONS (follow in order, do not skip)
+================================================================================
+
+Tested on Windows 11. Linux/macOS notes at bottom.
+If you hit an error, jump to the TROUBLESHOOTING section at the end.
+
+
+--------------------------------------------------------------------------------
+ STEP 0 — INSTALL PYTHON 3.10  (MANDATORY — not 3.11/3.12/3.14)
+--------------------------------------------------------------------------------
+TensorFlow + hopsworks have NO wheels for Python 3.12/3.14. Must use 3.10.
+
+1. Download Python 3.10.x:  https://www.python.org/downloads/release/python-31011/
+   (Windows installer: "Windows installer (64-bit)")
+2. During install: TICK "Add python.exe to PATH".
+3. Verify in a NEW terminal:
+       py -3.10 --version
+   Must print:  Python 3.10.x
+
+
+--------------------------------------------------------------------------------
+ STEP 1 — GET THE PROJECT + THE .env FILE
+--------------------------------------------------------------------------------
+1. Copy the whole AQI_Predictor folder to your PC.
+
+2. CRITICAL: the file ".env" holds the API keys and is NOT in git
+   (it is gitignored on purpose). Ask the project owner to send you the
+   ".env" file directly (email/USB/chat). Put it in the AQI_Predictor root,
+   next to requirements.txt.
+
+   Without .env the dashboard shows: "Feature load failed".
+
+   .env must contain these 4 lines (values filled in):
+       AQICN_API_TOKEN=...
+       OPENWEATHER_API_KEY=...
+       HOPSWORKS_API_KEY=...
+       HOPSWORKS_PROJECT=tenpearls
+
+   NOTE: the data + trained models live in the owner's Hopsworks project
+   ("tenpearls"). You MUST use the owner's HOPSWORKS_API_KEY to see them.
+   A different key = empty project = no data.
+
+
+--------------------------------------------------------------------------------
+ STEP 2 — OPEN TERMINAL IN PROJECT FOLDER
+--------------------------------------------------------------------------------
+Open PowerShell, then:
+
+    cd "C:\path\to\AQI_Predictor"
+
+(Replace with the real path where you put the folder.)
+
+
+--------------------------------------------------------------------------------
+ STEP 3 — CREATE + ACTIVATE VIRTUAL ENVIRONMENT
+--------------------------------------------------------------------------------
+Create venv with Python 3.10 (use the "py -3.10" launcher, NOT "python"):
+
+    py -3.10 -m venv venv
+
+Activate it (PowerShell):
+
+    venv\Scripts\Activate.ps1
+
+If PowerShell blocks the script with "running scripts is disabled", run this
+ONCE then re-run the activate line above:
+
+    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+After activating, your prompt must show  (venv)  at the start.
+That prefix means the right Python is active. If you don't see it, STOP and
+fix this before continuing (everything breaks otherwise).
+
+
+--------------------------------------------------------------------------------
+ STEP 4 — INSTALL DEPENDENCIES (pinned, ~5-10 min, TensorFlow is big)
+--------------------------------------------------------------------------------
+    python -m pip install --upgrade pip
+    pip install --timeout 300 --retries 20 -r requirements.txt
+
+The "--timeout 300 --retries 20" matters: TensorFlow is ~350MB and the
+download sometimes times out on slow networks.
+
+You may see ONE harmless warning about "protobuf ... incompatible".
+Ignore it — it works at runtime.
+
+
+--------------------------------------------------------------------------------
+ STEP 5 — RUN THE DASHBOARD
+--------------------------------------------------------------------------------
+ALWAYS launch with the venv's python (guarantees correct interpreter):
+
+    python -m streamlit run app/streamlit_app.py
+
+Browser opens at:  http://localhost:8501
+
+- Pick a city from the dropdown.
+- FIRST load for a city is SLOW (downloads a ~144MB model from the cloud).
+  This is normal. It is cached after — instant next time.
+- You will see: current AQI, history chart, 72-hour forecast chart, table.
+
+To stop: press Ctrl+C in the terminal.
+
+
+--------------------------------------------------------------------------------
+ STEP 6 (OPTIONAL) — REST API
+--------------------------------------------------------------------------------
+    python app/flask_api.py
+Serves JSON at:  http://localhost:5000
+
+
+--------------------------------------------------------------------------------
+ STEP 7 (OPTIONAL) — RUN TESTS
+--------------------------------------------------------------------------------
+    pytest tests/ -v
+(No keys needed — uses synthetic data.)
+
+
+================================================================================
+ TROUBLESHOOTING  (every real error we hit, with the fix)
+================================================================================
+
+ERROR: "python3.10 is not recognized"
+  -> On Windows use:  py -3.10 -m venv venv
+     ("python3.10" is a Linux/macOS command only.)
+
+ERROR: "No module named 'hopsworks'"
+  -> You ran with the wrong Python (global, not venv).
+     Make sure (venv) shows in your prompt, then run:
+        python -m streamlit run app/streamlit_app.py
+     If still failing, you skipped Step 4 — install deps inside the venv.
+
+ERROR: "Feature load failed: Query must be a string unless using sqlalchemy."
+  -> Wrong sqlalchemy version. Fix:
+        pip install "sqlalchemy>=2.0,<2.1"
+     (pandas 2.3 needs sqlalchemy 2.0. requirements.txt already pins this,
+      so this only happens if you changed versions.)
+
+ERROR: "Feature load failed: No cloud features for <city>"
+  -> That city has no data in the cloud yet. London always works.
+     Other cities need the owner to have run the pipeline for them.
+
+ERROR: dashboard says "Feature load failed" with a login/connection error
+  -> Your .env is missing or has wrong keys. Re-check Step 1.
+     Confirm .env sits next to requirements.txt and HOPSWORKS_PROJECT=tenpearls.
+
+ERROR: TensorFlow install fails / times out
+  -> Re-run:  pip install --timeout 300 --retries 20 tensorflow==2.21.0
+
+ERROR: PowerShell "running scripts is disabled on this system"
+  -> Run once:
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+     then activate the venv again.
+
+ERROR: "numpy.dtype size changed, may indicate binary incompatibility"
+  -> Mismatched numpy/pandas. Reinstall the pinned set clean:
+        pip install --force-reinstall -r requirements.txt
+
+WARNING: "protobuf ... incompatible" during install
+  -> Harmless. Ignore. Everything runs fine.
+
+Dashboard is slow on first city load
+  -> Normal — one-time 144MB model download from cloud. Cached after.
+
+
+--------------------------------------------------------------------------------
+ LINUX / macOS DIFFERENCES
+--------------------------------------------------------------------------------
+- Create venv:     python3.10 -m venv venv
+- Activate:        source venv/bin/activate
+- Everything else identical.
+
+================================================================================
